@@ -95,6 +95,8 @@ namespace DataETLViaHttp.Utils
 
             _logger.LogInformation("url:{0}", (baseIp + url + "?" + EncryptionUtil.TransJsonToSpecific(paramMap)));
 
+            HttpResponseMessage stringTask;
+
             using (var request = new HttpRequestMessage())
             {
                 request.Headers.TryAddWithoutValidation("Authorization", AccessKey + ":" + sign);
@@ -109,21 +111,24 @@ namespace DataETLViaHttp.Utils
                 request.Content.Headers.ContentType = new MediaTypeWithQualityHeaderValue("application/json");
 
 
-                var stringTask = await client.SendAsync(request);
+                stringTask = await client.SendAsync(request);
+            }
 
-                if (stringTask.IsSuccessStatusCode)
-                {
-                    _logger.LogInformation("请求成功");
+            if (stringTask.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("请求成功");
 
-                    var resStr = await stringTask.Content.ReadAsStringAsync();
+                var resStr = await stringTask.Content.ReadAsStringAsync();
 
-                    payload = JsonConvert.DeserializeObject<JObject>(resStr);
+                payload = JsonConvert.DeserializeObject<JObject>(resStr);
 
-                    _logger.LogInformation("数据条数:{0}", payload["data"]["total"]);
+                _logger.LogInformation("数据条数:{0}", payload["data"]["total"]);
 
-                    res = payload["data"]["result"].ToObject<List<T>>();
-                }
-
+                res = payload["data"]["result"].ToObject<List<T>>();
+            }
+            else
+            {
+                throw new Exception("请求失败，无数据返回");
             }
 
             return res;

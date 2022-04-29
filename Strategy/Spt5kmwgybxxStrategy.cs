@@ -22,10 +22,8 @@ namespace DataETLViaHttp.Strategy
             _logger = loggerFac.CreateLogger<Spt5kmwgybxxStrategy>();
         }
 
-        public async Task Exeute(EntitiesUrl configEntity)
+        public virtual async Task Exeute(EntitiesUrl configEntity)
         {
-            _logger.LogInformation("{0}实时数据导入策略开始", "5公里网格预报信息");
-
             using var db = _dbFactory.OpenDbConnection();
 
             var max = db.Scalar<DateTime>(db.From<dwd_spt_5kmwgybxx>().Select(w => new { ybgxsj = Sql.Max("ybgxsj") }));
@@ -38,9 +36,10 @@ namespace DataETLViaHttp.Strategy
                 x.dsc_biz_operation == w.dsc_biz_operation).Count > 0);
 
             await db.InsertAllAsync(dwd_spt_5kmwgybxxs);
+
         }
 
-        public async Task GetDataBehindSeveralDay(EntitiesUrl configEntity, DateTime date)
+        public virtual async Task GetDataBehindSeveralDay(EntitiesUrl configEntity, DateTime date)
         {
             using var db = _dbFactory.OpenDbConnection();
 
@@ -50,7 +49,6 @@ namespace DataETLViaHttp.Strategy
                     new Dictionary<string, object> { { "ybgxsj", date.ToString("yyyy-MM-dd HH:mm:ss") } });
                 await db.InsertAllAsync(dwd_spt_5kmwgybxxs);
 
-                _logger.LogInformation("{0}初始化成功\r\n", "省平台-5公里网格预报信息");
             }
 
             

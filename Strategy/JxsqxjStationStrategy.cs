@@ -22,10 +22,12 @@ namespace DataETLViaHttp.Strategy
             _logger = loggerFac.CreateLogger<JxsqxjStationStrategy>();
         }
 
-        public async Task Exeute(EntitiesUrl configEntity)
+        public JxsqxjStationStrategy()
         {
-            _logger.LogInformation("{0}实时数据导入策略开始", "气象站台信息");
+        }
 
+        public virtual async Task Exeute(EntitiesUrl configEntity)
+        {
             using var db = _dbFactory.OpenDbConnection();
 
             var max = db.Scalar<int>(db.From<dwd_jxsqxj_station>().Select(w => new { max = Sql.Max("id") }));
@@ -38,7 +40,7 @@ namespace DataETLViaHttp.Strategy
 
         }
 
-        public async Task GetDataBehindSeveralDay(EntitiesUrl configEntity, DateTime date)
+        public virtual async Task GetDataBehindSeveralDay(EntitiesUrl configEntity, DateTime date)
         {
             using var db = _dbFactory.OpenDbConnection();
 
@@ -47,8 +49,8 @@ namespace DataETLViaHttp.Strategy
                 var dwd_jxsqxj_stations = await _loopUtil.GetDataFromInters<dwd_jxsqxj_station>(configEntity.url);
 
                 await db.InsertAllAsync(dwd_jxsqxj_stations);
-                _logger.LogInformation("{0}初始化完成\r\n", "气象站台信息");
             }
+
 
         }
     }

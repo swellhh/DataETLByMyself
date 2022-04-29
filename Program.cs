@@ -1,4 +1,8 @@
-﻿using DataETLViaHttp.BackgroundService;
+﻿using Castle.DynamicProxy;
+using Castle.MicroKernel.Registration;
+using Castle.Windsor;
+using DataETLViaHttp.Aop;
+using DataETLViaHttp.BackgroundService;
 using DataETLViaHttp.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,7 +12,7 @@ using NLog.Extensions.Logging;
 using ServiceStack.Data;
 using ServiceStack.OrmLite;
 using System;
-
+using System.Linq;
 
 namespace DataETLViaHttp
 {
@@ -22,6 +26,7 @@ namespace DataETLViaHttp
         public static IHostBuilder CreateHostBuilder(string[] args)
         {
             return Host.CreateDefaultBuilder(args)
+                .UseWindsorContainerServiceProvider(DependencyResolver.Initialize())
                 .ConfigureConfiguration()
                 .ConfigureSystemServices();
         }
@@ -67,7 +72,6 @@ namespace DataETLViaHttp
 
             });
         }
-
     }
 
 }

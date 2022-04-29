@@ -1,4 +1,5 @@
-﻿using DataETLViaHttp.BackgroundService;
+﻿using Castle.Windsor;
+using DataETLViaHttp.BackgroundService;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -20,17 +21,15 @@ namespace DataETLViaHttp.Utils
         private readonly SpecificClientResolver _clientChoose;
         private readonly int _pageSize;
         private readonly IHostEnvironment _hostEnvironment;
-        private readonly DataETLRetryService _dataETLRetryService;
         private readonly ISpecificWebClientUtil _defaultClient;
 
-        public DataLoopUtil(ILogger<DataLoopUtil> logger, IConfiguration appSettings, SpecificClientResolver clientChoose, IHostEnvironment hostEnvironment, DataETLRetryService dataETLRetryService)
+        public DataLoopUtil(ILogger<DataLoopUtil> logger, IConfiguration appSettings, SpecificClientResolver clientChoose, IHostEnvironment hostEnvironment)
         {
             _logger = logger;
             _appSettings = appSettings;
             _clientChoose = clientChoose;
             _pageSize = _appSettings.GetValue<int>("Application:SyncBatch");
             _hostEnvironment = hostEnvironment;
-            _dataETLRetryService = dataETLRetryService;
             _defaultClient = clientChoose("Yjtyxm");
         }
 
@@ -44,38 +43,63 @@ namespace DataETLViaHttp.Utils
         }
 
 
-        public async Task<List<T>> GetDataFromInters<T>(string url, Dictionary<string, object> kv = null)
+        public async Task<List<T>> GetDataFromInters<T>(string url)
         {
             Random random = new Random();
 
             int pageIndex = 1, total;
             List<T> res = new List<T>();
 
-            try
+            do
             {
-                do
+                _logger.LogInformation("正在获取数据,页码为{0}", pageIndex);
+                var inputJson = BuildParamJson(new Dictionary<string, object>(), pageIndex);
+                var list = await _defaultClient.GetDataList<T>(url
+                    , JsonConvert.DeserializeObject<JObject>(inputJson));
+                list = list == null ? new List<T>() : list;
+                total = list.Count;
+                res.AddRange(list);
+
+
+                pageIndex++;
+
+                if (_hostEnvironment.IsProduction())
                 {
-                    _logger.LogInformation("正在获取数据,页码为{0}", pageIndex);
-                    var inputJson = BuildParamJson(kv, pageIndex);
-                    var list = await _defaultClient.GetDataList<T>(url
-                        , JsonConvert.DeserializeObject<JObject>(inputJson));
-                    list = list == null ? new List<T>() : list;
-                    total = list.Count;
-                    res.AddRange(list);
+                    Thread.Sleep(TimeSpan.FromSeconds(random.Next(10, 20)));
+                }
+
+            } while (_pageSize == total && pageIndex < 200);
 
 
-                    pageIndex++;
+            return res;
+        }
 
-                    if (_hostEnvironment.IsProduction())
-                    {
-                        Thread.Sleep(TimeSpan.FromSeconds(random.Next(10, 20)));
-                    }
+        public async Task<List<T>> GetDataFromInters<T>(string url, Dictionary<string, object> kv)
+        {
+            Random random = new Random();
 
-                } while (_pageSize == total && pageIndex < 200);
-            }
-            catch (Exception)
+            int pageIndex = 1, total;
+            List<T> res = new List<T>();
+
+            do
             {
-            }
+                _logger.LogInformation("正在获取数据,页码为{0}", pageIndex);
+                var inputJson = BuildParamJson(new Dictionary<string, object>(), pageIndex);
+                var list = await _defaultClient.GetDataList<T>(url
+                    , JsonConvert.DeserializeObject<JObject>(inputJson));
+                list = list == null ? new List<T>() : list;
+                total = list.Count;
+                res.AddRange(list);
+
+
+                pageIndex++;
+
+                if (_hostEnvironment.IsProduction())
+                {
+                    Thread.Sleep(TimeSpan.FromSeconds(random.Next(10, 20)));
+                }
+
+            } while (_pageSize == total && pageIndex < 200);
 
 
             return res;
@@ -87,28 +111,20 @@ namespace DataETLViaHttp.Utils
             List<T> res = new List<T>();
             kv = kv ?? new Dictionary<string, object>();
 
-            try
+            do
             {
-                do
-                {
-                    _logger.LogInformation("正在获取数据,页码为{0}", pageIndex);
-                    var inputJson = BuildParamJson(kv,pageIndex);
-                    var list = await _clientChoose(configEntity.client).GetDataList<T>(configEntity.url
-                        , JsonConvert.DeserializeObject<JObject>(inputJson));
-                    list = list == null ? new List<T>() : list;
-                    total = list.Count;
-                    res.AddRange(list);
+                _logger.LogInformation("正在获取数据,页码为{0}", pageIndex);
+                var inputJson = BuildParamJson(kv, pageIndex);
+                var list = await _clientChoose(configEntity.client).GetDataList<T>(configEntity.url
+                    , JsonConvert.DeserializeObject<JObject>(inputJson));
+                list = list == null ? new List<T>() : list;
+                total = list.Count;
+                res.AddRange(list);
 
 
-                    pageIndex++;
+                pageIndex++;
 
-                } while (_pageSize == total && pageIndex < 200);
-            }
-            catch (Exception)
-            {
-                _appSettings.RecordPageIndex(configEntity.name, pageIndex);
-                await _dataETLRetryService.RetryWhenExceptionThrow(kv, GetDataFromInters<T>);
-            }
+            } while (_pageSize == total && pageIndex < 200);
 
 
             return res;
@@ -159,38 +175,30 @@ namespace DataETLViaHttp.Utils
             List<T> res = new List<T>();
             kv = kv ?? new Dictionary<string, object>();
 
-            try
+            do
             {
-                do
+                var inputJson = BuildParamJson(kv, pageIndex);
+                var list = await _clientChoose(configEntity.client).GetDataList<T>(configEntity.url
+                    , JsonConvert.DeserializeObject<JObject>(inputJson));
+                list = list == null ? new List<T>() : list;
+                total = list.Count;
+                res.AddRange(list);
+
+
+                pageIndex++;
+
+                if (res.Count == 10000)
                 {
-                    var inputJson = BuildParamJson(kv, pageIndex);
-                    var list = await _clientChoose(configEntity.client).GetDataList<T>(configEntity.url
-                        , JsonConvert.DeserializeObject<JObject>(inputJson));
-                    list = list == null ? new List<T>() : list;
-                    total = list.Count;
-                    res.AddRange(list);
+                    insertAct(res);
+                    res = new List<T>();
+                }
 
+                if (_hostEnvironment.IsProduction())
+                {
+                    Thread.Sleep(TimeSpan.FromSeconds(random.Next(0, 10)));
+                }
 
-                    pageIndex++;
-
-                    if (res.Count == 10000)
-                    {
-                        insertAct(res);
-                        res = new List<T>();
-                    }
-
-                    if (_hostEnvironment.IsProduction())
-                    {
-                        Thread.Sleep(TimeSpan.FromSeconds(random.Next(0, 10)));
-                    }
-
-                } while (_pageSize == total && pageIndex < 200);
-            }
-            catch (Exception)
-            {
-                _appSettings.RecordPageIndex(configEntity.name, pageIndex);
-                await _dataETLRetryService.RetryWhenExceptionThrow(kv, GetDataFromInters<T>);
-            }
+            } while (_pageSize == total && pageIndex < 200);
 
 
             return res;

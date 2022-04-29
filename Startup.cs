@@ -1,4 +1,9 @@
-﻿using DataETLViaHttp.BackgroundService;
+﻿using Castle.Core;
+using Castle.DynamicProxy;
+using Castle.MicroKernel.Registration;
+using Castle.Windsor;
+using DataETLViaHttp.Aop;
+using DataETLViaHttp.BackgroundService;
 using DataETLViaHttp.Cache;
 using DataETLViaHttp.Model;
 using DataETLViaHttp.Strategy;
@@ -15,7 +20,6 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace DataETLViaHttp
 {
@@ -30,13 +34,11 @@ namespace DataETLViaHttp
             RegisterInterfaceConfigInfo(services, configuration);
             RegisterSpecificWebClient(services);
             RegisterChooseWebClient(services);
-            RegisterStrategy(services);
             RegisterChooseStrategy(services);
 
             var provider = BuildDi(services, configuration);
 
             CreateTables(provider);
-            InitRecordPageIndexFile(provider);
         }
 
         private static IServiceProvider BuildDi(IServiceCollection services,IConfiguration config)
@@ -60,7 +62,7 @@ namespace DataETLViaHttp
             services
                 .AddHostedService<DataETLService>()
                 .AddSingleton<IDataLoopUtil,DataLoopUtil>()
-                .AddSingleton<DataETLRetryService>()
+                .AddSingleton<DataETLRetryInterceptor>()
                 .AddSingleton<ICacheClient,MemoryCacheClient>()
                 .AddSingleton<IDbConnectionFactory>(dbFactory);
 
@@ -88,31 +90,19 @@ namespace DataETLViaHttp
             db.CreateTableIfNotExists<dwd_spt_qyzdqxzzdxx>();
 
         }
-        
-        private static void RegisterStrategy(IServiceCollection services)
-        {
-            services.AddSingleton<JxsqxjStationStrategy>();
-            services.AddSingleton<SptZjsjqx24xsljmylybxxStrategy>();
-            services.AddSingleton<SptZjsjqxmylxsskxxStrategy>();
-            services.AddSingleton<Spt1kmwgjsybxxStrategy>();
-            services.AddSingleton<Spt5kmwgybxxStrategy>();
-            services.AddSingleton<SptQxzdxxStrategy>();
-            services.AddSingleton<JxssljNpgqjcsjxxStrategy>();
-            services.AddSingleton<JxssljNpgcrljpslxxStrategy>();
-            services.AddSingleton<SptQyzdqxzzdxxStrategy>();
-            services.AddSingleton<DmzdqxzgcxxStrategy>();
-            services.AddSingleton<SptQyzdqxzgcxxStrategy>();
-        }
-
+                
         private static void RegisterChooseStrategy(IServiceCollection services)
         {
+            DependencyResolver.Register(new Aop.ComponentRegistration());
+
             services.AddSingleton<StrategyServiceResolver>(serviceProvider => key =>
             {
+
                 switch (key)
                 {
                     case "dwd_jxsqxj_station":
-                        return serviceProvider.GetService<JxsqxjStationStrategy>();
-
+                        var target = serviceProvider.GetService<JxsqxjStationStrategy>();
+                        return target;
                     case "dwd_spt_zjsjqx24xsljmylybxx":
                         return serviceProvider.GetService<SptZjsjqx24xsljmylybxxStrategy>();
 
@@ -176,41 +166,22 @@ namespace DataETLViaHttp
         }
 
 
-
         private static void RegisterInterfaceConfigInfo(IServiceCollection services, IConfiguration configuration)
         {
-            var urls = new EntitiesUrls();
-            configuration.GetSection("DataUrl").Bind("Entities", urls);
-            services.AddSingleton(urls);
+            var exceptStFilePath = configuration.GetValue<string>("Application:StationExcept");
+            var exceptStJsonStr = File.ReadAllText(exceptStFilePath);
+            var stationExcepts = JsonConvert.DeserializeObject<StationExcepts>(exceptStJsonStr);
+            services.AddSingleton(stationExcepts);
+
+
+            var entitiesUrlFilePath = configuration.GetValue<string>("DataUrl:EntitiesPath");
+            var entitiesUrlJsonStr = File.ReadAllText(entitiesUrlFilePath);
+            var entitiesUrl = JsonConvert.DeserializeObject<EntitiesUrls>(entitiesUrlJsonStr);
+            services.AddSingleton(entitiesUrl);
+
         }
 
-
-        private static void InitRecordPageIndexFile(IServiceProvider container)
-        {
-            var config = container.GetService<IConfiguration>();
-            var filePath = config.GetValue<string>("Application:RecordPageIndexFilePath");
-
-            if (!File.Exists(filePath))
-            {
-                File.Create(filePath);
-            }
-
-            var url = container.GetService<EntitiesUrls>();
-            var fileContent = new Dictionary<string, int>();
-
-
-            foreach (var item in url)
-            {
-                fileContent.Add(item.name, -1);
-            }
-
-
-            var stream = File.CreateText(filePath);
-            var text = JsonConvert.SerializeObject(fileContent);
-            stream.Write(text);
-            stream.Flush();
-            stream.Dispose();
-        }
 
     }
+
 }

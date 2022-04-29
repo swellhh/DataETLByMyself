@@ -77,11 +77,11 @@ namespace DataETLViaHttp.BackgroundService
                             task = Execute(source.Token);
 
                             nextUtc = expression.GetNextOccurrence(DateTime.UtcNow);
-                            Thread.Sleep(nextUtc.Value - DateTime.UtcNow);
+                            Task.Delay(nextUtc.Value - DateTime.UtcNow);
                         }
                         else
                         {
-                            Thread.Sleep(TimeSpan.FromSeconds(1));
+                            Task.Delay(TimeSpan.FromSeconds(1));
                         }
 
                     }

@@ -1,4 +1,5 @@
-﻿using Cronos;
+﻿using Castle.Windsor;
+using Cronos;
 using DataETLViaHttp.Cache;
 using DataETLViaHttp.Utils;
 using Microsoft.Extensions.Configuration;
@@ -29,11 +30,12 @@ namespace DataETLViaHttp.BackgroundService
             _appSettings = appSettings;
             _urls = urls;
             _cacheClient = cacheClient;
+
         }
 
         public override string _cronExpression => _appSettings.GetValue<string>("HostService:CronExpression");
 
-        public override CronFormat _format => CronFormat.Standard;
+        public override CronFormat _format => CronFormat.IncludeSeconds;
 
         public override async Task Execute(CancellationToken cancellationToken)
         {
@@ -64,11 +66,11 @@ namespace DataETLViaHttp.BackgroundService
         {
 
             var days = _appSettings.GetValue<DateTime>("Application:SyncDate");
-            _logger.LogInformation("{0}开始同步{1}开始的数据", item.name, days.ToString("yyyy年MM月dd日"));
+            
 
             try
             {
-                _cacheClient.Replace(item.name, 0);
+                _logger.LogInformation("{0}开始同步{1}开始的数据", item.name, days.ToString("yyyy年MM月dd日"));
 
                 var stra = _serviceAccessor(item.name);
 
@@ -85,28 +87,18 @@ namespace DataETLViaHttp.BackgroundService
         public override async Task SetOnce()
         {
             EntitiesUrl obj = null;
-            try
+            _logger.LogInformation("初始化抓取嘉兴大数据平台接口数据开始");
+
+            //Parallel.ForEach(_urls, async (item, state) =>
+            //{
+            //    await GetDataBehindSeveralDay(item);
+            //});
+
+            foreach (var item in _urls.Where(w => !w.isStop))
             {
-                _logger.LogInformation("初始化抓取嘉兴大数据平台接口数据开始");
-
-                //Parallel.ForEach(_urls, async (item, state) =>
-                //{
-                //    await GetDataBehindSeveralDay(item);
-                //});
-
-                foreach (var item in _urls.Where(w => !w.isStop))
-                {
-                    obj = item;
-                    await GetDataBehindSeveralDay(item);
-                }
+                obj = item;
+                await GetDataBehindSeveralDay(item);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "初始化数据库有问题");
-            }
-
-
-            _logger.LogInformation("初始化抓取嘉兴大数据平台接口数据结束");
 
         }
     }

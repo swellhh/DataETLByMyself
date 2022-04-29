@@ -14,7 +14,16 @@ namespace DataETLViaHttp.Utils
         /// <param name="url"></param>
         /// <param name="kv"></param>
         /// <returns></returns>
-        Task<List<T>> GetDataFromInters<T>(string url, Dictionary<string, object> kv = null);
+        Task<List<T>> GetDataFromInters<T>(string url, Dictionary<string, object> kv);
+
+        /// <summary>
+        /// 不需要重试
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="url"></param>
+        /// <param name="kv"></param>
+        /// <returns></returns>
+        Task<List<T>> GetDataFromInters<T>(string url);
 
         /// <summary>
         /// 需要重试
@@ -24,7 +33,7 @@ namespace DataETLViaHttp.Utils
         /// <param name="kv"></param>
         /// 
         /// <returns></returns>
-        Task<List<T>> GetDataFromInters<T>(EntitiesUrl configEntity, Dictionary<string, object> kv = null);
+        Task<List<T>> GetDataFromInters<T>(EntitiesUrl configEntity, Dictionary<string, object> kv);
 
         /// <summary>
         /// 不需要重试且带有一万条记录直接插入数据库的功能
@@ -34,7 +43,7 @@ namespace DataETLViaHttp.Utils
         /// <param name="retryName"></param>
         /// <param name="kv"></param>
         /// <returns></returns>
-        Task<List<T>> GetDataFromInters<T>(string url, Action<List<T>> insertAct, Dictionary<string, object> kv = null);
+        Task<List<T>> GetDataFromInters<T>(string url, Action<List<T>> insertAct, Dictionary<string, object> kv);
 
         /// <summary>
         /// 需要重试且带有一万条记录直接插入数据库的功能
@@ -44,7 +53,7 @@ namespace DataETLViaHttp.Utils
         /// <param name="retryName"></param>
         /// <param name="kv"></param>
         /// <returns></returns>
-        Task<List<T>> GetDataFromInters<T>(Action<List<T>> insertAct, EntitiesUrl configEntity, Dictionary<string, object> kv = null);
+        Task<List<T>> GetDataFromInters<T>(Action<List<T>> insertAct, EntitiesUrl configEntity, Dictionary<string, object> kv);
 
     }
 }

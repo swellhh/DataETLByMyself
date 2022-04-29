@@ -21,7 +21,7 @@ namespace DataETLViaHttp.Strategy
             _logger = loggerFac.CreateLogger<DmzdqxzgcxxStrategy>();
         }
 
-        public async Task Exeute(EntitiesUrl configEntity)
+        public virtual async Task Exeute(EntitiesUrl configEntity)
         {
             using var db = _dbFactory.OpenDbConnection();
 
@@ -34,33 +34,22 @@ namespace DataETLViaHttp.Strategy
                     x.etl_oper_type == w.etl_oper_type).Count > 0);
             db.InsertAll(dwd_spt_dmzdqxzgcxxs);
 
-            _logger.LogInformation("{0}实时数据导入策略成功", "地面自动气象站观测信息");
-
         }
 
-        public async Task GetDataBehindSeveralDay(EntitiesUrl configEntity, DateTime date)
+        public virtual async Task GetDataBehindSeveralDay(EntitiesUrl configEntity, DateTime date)
         {
             using var db = _dbFactory.OpenDbConnection();
 
-            try
+            if (db.Count<dwd_spt_dmzdqxzgcxx>() == 0)
             {
-                if (db.Count<dwd_spt_dmzdqxzgcxx>() == 0)
-                {
-                    var dwd_spt_dmzdqxzgcxxs = await _loopUtil.GetDataFromInters<dwd_spt_dmzdqxzgcxx>(
-                        async list => { await db.InsertAllAsync(list); },
-                        configEntity,
-                        new Dictionary<string, object> {
+                var dwd_spt_dmzdqxzgcxxs = await _loopUtil.GetDataFromInters<dwd_spt_dmzdqxzgcxx>(
+                    async list => { await db.InsertAllAsync(list); },
+                    configEntity,
+                    new Dictionary<string, object> {
                             { "observtimes", date.ToString("yyyy-MM-dd HH:mm:ss") }
-                        });
+                    });
 
-                    await db.InsertAllAsync(dwd_spt_dmzdqxzgcxxs);
-                    _logger.LogInformation("{0}初始化完成\r\n", "地面自动气象站观测信息");
-                }
-            }
-            catch (Exception)
-            {
-                _logger.LogInformation("{0}报错SQL：｛1｝\r\n", "地面自动气象站观测信息", db.GetLastSql());
-
+                await db.InsertAllAsync(dwd_spt_dmzdqxzgcxxs);
             }
 
         }

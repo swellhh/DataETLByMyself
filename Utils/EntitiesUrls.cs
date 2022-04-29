@@ -20,5 +20,7 @@ namespace DataETLViaHttp.Utils
 
         public bool isStop { get; set; }
 
+        public string zw { get; set; }
+
     }
 }

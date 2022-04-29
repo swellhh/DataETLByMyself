@@ -13,6 +13,7 @@ namespace DataETLViaHttp.Model
         /// <summary>
         /// 
         /// </summary>
+        [PrimaryKey]
         public string iiiii { get; set; }
         /// <summary>
         /// 海宁

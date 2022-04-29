@@ -15,13 +15,15 @@ namespace DataETLViaHttp.Strategy
     public class SptQyzdqxzgcxxStrategy : BaseStrategy, IStrategy
     {
         private readonly ILogger<SptQyzdqxzgcxxStrategy> _logger;
+        private readonly StationExcepts _stationExcepts;
 
-        public SptQyzdqxzgcxxStrategy(IDbConnectionFactory dbFactory, ILoggerFactory loggerFac, IConfiguration appSettings, IDataLoopUtil loopUtil) : base(dbFactory, appSettings, loopUtil)
+        public SptQyzdqxzgcxxStrategy(IDbConnectionFactory dbFactory, ILoggerFactory loggerFac, IConfiguration appSettings, IDataLoopUtil loopUtil, StationExcepts stationExcepts) : base(dbFactory, appSettings, loopUtil)
         {
+            _stationExcepts = stationExcepts;
             _logger = loggerFac.CreateLogger<SptQyzdqxzgcxxStrategy>(); ;
         }
 
-        public async Task Exeute(EntitiesUrl configEntity)
+        public virtual async Task Exeute(EntitiesUrl configEntity)
         {
 
             using var db = _dbFactory.OpenDbConnection();
@@ -33,34 +35,27 @@ namespace DataETLViaHttp.Strategy
             var tableData = db.Select<dwd_spt_qyzdqxzgcxx>();
             dwd_spt_dmzdqxzgcxxs.RemoveAll(w => tableData.FindAll(x => x.stationnum == w.stationnum && x.observtimes == w.observtimes &&
                     x.etl_oper_type == w.etl_oper_type).Count > 0);
+
+            dwd_spt_dmzdqxzgcxxs.RemoveAll(w => _stationExcepts.Select(w => w.code).Contains(w.stationnum));
             db.InsertAll(dwd_spt_dmzdqxzgcxxs);
 
-            _logger.LogInformation("{0}实时数据导入策略成功", "区域自动气象站观测信息");
         }
 
-        public async Task GetDataBehindSeveralDay(EntitiesUrl configEntity, DateTime date)
+        public virtual async Task GetDataBehindSeveralDay(EntitiesUrl configEntity, DateTime date)
         {
             using var db = _dbFactory.OpenDbConnection();
 
-            try
+            if (db.Count<dwd_spt_qyzdqxzgcxx>() == 0)
             {
-                if (db.Count<dwd_spt_qyzdqxzgcxx>() == 0)
-                {
-                    var dwd_spt_dmzdqxzgcxxs = await _loopUtil.GetDataFromInters<dwd_spt_qyzdqxzgcxx>(
-                        async list => { await db.InsertAllAsync(list); },
-                        configEntity,
-                        new Dictionary<string, object> {
+                var dwd_spt_dmzdqxzgcxxs = await _loopUtil.GetDataFromInters<dwd_spt_qyzdqxzgcxx>(
+                    async list => { await db.InsertAllAsync(list); },
+                    configEntity,
+                    new Dictionary<string, object> {
                             { "observtimes", date.ToString("yyyy-MM-dd HH:mm:ss") }
-                        });
+                    });
 
-                    await db.InsertAllAsync(dwd_spt_dmzdqxzgcxxs);
-                    _logger.LogInformation("{0}初始化完成\r\n", "区域自动气象站观测信息");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "{0}报错：｛1｝\r\n", "区域自动气象站观测信息");
-
+                dwd_spt_dmzdqxzgcxxs.RemoveAll(w => _stationExcepts.Select(w => w.code).Contains(w.stationnum));
+                await db.InsertAllAsync(dwd_spt_dmzdqxzgcxxs);
             }
 
         }
