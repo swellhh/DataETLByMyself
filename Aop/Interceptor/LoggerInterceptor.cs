@@ -23,7 +23,7 @@ namespace DataETLViaHttp.Aop
             switch (methodName)
             {
                 case "GetDataBehindSeveralDay":
-                    _logger.LogTrace("{0}初始化开始", ((EntitiesUrl)invocation.Arguments[0]).zw);
+                    _logger.LogTrace("{0}初始化开始---", ((EntitiesUrl)invocation.Arguments[0]).zw);
 
                     break;
                 case "Exeute":
@@ -45,7 +45,7 @@ namespace DataETLViaHttp.Aop
 
                     break;
                 case "Exeute":
-                    _logger.LogTrace("{0}实时数据导入策略完成\n\r", ((EntitiesUrl)invocation.Arguments[0]).zw);
+                    _logger.LogTrace("{0}实时数据导入策略完成\r\n", ((EntitiesUrl)invocation.Arguments[0]).zw);
 
                     break;
                 default:

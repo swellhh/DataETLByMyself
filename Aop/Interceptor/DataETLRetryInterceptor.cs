@@ -37,9 +37,17 @@ namespace DataETLViaHttp.BackgroundService
 
             _cache.Increment(item.name, 1);
 
-            _logger.LogInformation("{0}开始重试抓,次数{1} \r\n", item.zw, _cache.Get<long>(item.name));
+            Task task =  Task.Delay(TimeSpan.FromSeconds(_cache.Get<long>(item.name) * 60))
+                .ContinueWith(w => 
+                {
+                    _logger.LogTrace("{0}开始重试,次数{1} \r\n", item.zw, _cache.Get<long>(item.name));
+                    return retryDelegate.Invoke(target, parameters);
+                });
 
-            Task.Delay(TimeSpan.FromSeconds(_cache.Get<int>(item.name) * 60)).ContinueWith(t => retryDelegate.Invoke(target, parameters));
+            if (task != null && task.IsCompleted)
+            {
+                return task;
+            }
 
             return Task.CompletedTask;
         }
@@ -47,7 +55,6 @@ namespace DataETLViaHttp.BackgroundService
         public void Intercept(IInvocation invocation)
         {
             var target = (EntitiesUrl)invocation.Arguments[0];
-
 
             try
             {
@@ -62,16 +69,16 @@ namespace DataETLViaHttp.BackgroundService
                     throw task.Exception;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                if (_cache.Get<int>(target.name) < _retryCountLimit)
+                if (_cache.Get<long>(target.name) < _retryCountLimit)
                 {
                     RetryWhenExceptionThrow(invocation.Method, invocation.InvocationTarget, invocation.Arguments).GetAwaiter().GetResult();
                 }
-
-                _logger.LogTrace("重试次数{0}", _cache.Get<int>(target.name));
-                _logger.LogError(ex, "出大问题");
-
+                else
+                {
+                    throw;
+                }
             }
 
         }

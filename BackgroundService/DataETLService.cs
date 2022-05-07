@@ -45,13 +45,10 @@ namespace DataETLViaHttp.BackgroundService
             {
                 foreach (var item in _urls.Where(w => !w.isStop))
                 {
-                    _cacheClient.Replace(item.name, 0);
-
                     var stra = _serviceAccessor(item.name);
 
-                    await stra.Exeute(item);
+                    //await stra.Exeute(item);
                 }
-                
 
             }
             catch (Exception ex)
@@ -65,41 +62,38 @@ namespace DataETLViaHttp.BackgroundService
         private async Task GetDataBehindSeveralDay(EntitiesUrl item)
         {
 
-            var days = _appSettings.GetValue<DateTime>("Application:SyncDate");
+            var syncDate = _appSettings.GetValue<DateTime>("Application:SyncDate");
             
-
             try
             {
-                _logger.LogInformation("{0}开始同步{1}开始的数据", item.name, days.ToString("yyyy年MM月dd日"));
 
                 var stra = _serviceAccessor(item.name);
 
-                await stra.GetDataBehindSeveralDay(item, days);
+                _logger.LogInformation("{0}开始同步{1}开始的数据", item.name, syncDate.ToString("yyyy年MM月dd日"));
+
+                await stra.GetDataBehindSeveralDay(item, syncDate);
 
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "{0}{1}天数据初始化任务出问题了", item.name, days.ToString().Replace("-1", ""));
+                _logger.LogError(ex, "数据初始化任务出问题了");
             }
 
         }
 
         public override async Task SetOnce()
         {
-            EntitiesUrl obj = null;
-            _logger.LogInformation("初始化抓取嘉兴大数据平台接口数据开始");
-
-            //Parallel.ForEach(_urls, async (item, state) =>
-            //{
-            //    await GetDataBehindSeveralDay(item);
-            //});
-
             foreach (var item in _urls.Where(w => !w.isStop))
             {
-                obj = item;
-                await GetDataBehindSeveralDay(item);
-            }
+                _cacheClient.Set(item.name, 0L, DateTime.Now.AddHours(5));
 
+                var stra = _serviceAccessor(item.name);
+
+                await GetDataBehindSeveralDay(item);
+
+                await stra.Exeute(item);
+
+            }
         }
     }
 }

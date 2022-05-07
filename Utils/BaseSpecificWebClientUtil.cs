@@ -88,7 +88,7 @@ namespace DataETLViaHttp.Utils
 
             var timestmp = ((DateTime.Now.Ticks - TimeZone.CurrentTimeZone.ToLocalTime(new DateTime(1970, 1, 1, 0, 0, 0, 0)).Ticks) / 1000).ToString();
             var sign = EncryptionUtil.GenerateSign(SecretKey, paramMap, url, timestmp);
-            using var client = _httpClientFactory.CreateClient();
+            using var client = _httpClientFactory.CreateClient("proxy");
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));

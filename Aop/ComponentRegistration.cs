@@ -29,7 +29,7 @@ namespace DataETLViaHttp.Aop
             {
                 kernel.Register(
                Component.For(item)
-               .Interceptors(InterceptorReference.ForType<DataETLRetryInterceptor>()).Anywhere
+               .Interceptors(InterceptorReference.ForType<DataETLRetryInterceptor>()).Anywhere.SelectInterceptorsWith(new RetryInterceptorSelector())
                .Interceptors(InterceptorReference.ForType<LoggerInterceptor>()).Anywhere);
             }
 
