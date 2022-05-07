@@ -35,11 +35,12 @@ namespace DataETLViaHttp.BackgroundService
         {
             var item = (EntitiesUrl)parameters[0];
 
-            _cache.Increment(item.name, 1);
 
             Task task =  Task.Delay(TimeSpan.FromSeconds(_cache.Get<long>(item.name) * 60))
                 .ContinueWith(w => 
                 {
+                    _cache.Increment(item.name, 1);
+
                     _logger.LogTrace("{0}开始重试,次数{1} \r\n", item.zw, _cache.Get<long>(item.name));
                     return retryDelegate.Invoke(target, parameters);
                 });

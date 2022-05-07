@@ -47,13 +47,13 @@ namespace DataETLViaHttp.BackgroundService
                 {
                     var stra = _serviceAccessor(item.name);
 
-                    //await stra.Exeute(item);
+                    await stra.Exeute(item);
                 }
 
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "定时任务出问题了");
+                //_logger.LogError(ex, "定时任务出问题了");
             }
 
         }
@@ -90,9 +90,6 @@ namespace DataETLViaHttp.BackgroundService
                 var stra = _serviceAccessor(item.name);
 
                 await GetDataBehindSeveralDay(item);
-
-                await stra.Exeute(item);
-
             }
         }
     }

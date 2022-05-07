@@ -10,7 +10,7 @@ namespace DataETLViaHttp.Aop
     public class LoggerInterceptor : IInterceptor
     {
         private readonly ILogger<LoggerInterceptor> _logger;
-
+         
         public LoggerInterceptor(ILogger<LoggerInterceptor> logger)
         {
             _logger = logger;
@@ -23,7 +23,7 @@ namespace DataETLViaHttp.Aop
             switch (methodName)
             {
                 case "GetDataBehindSeveralDay":
-                    _logger.LogTrace("{0}初始化开始---", ((EntitiesUrl)invocation.Arguments[0]).zw);
+                    _logger.LogTrace("{0}初始化开始", ((EntitiesUrl)invocation.Arguments[0]).zw);
 
                     break;
                 case "Exeute":

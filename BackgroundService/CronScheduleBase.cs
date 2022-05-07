@@ -56,20 +56,18 @@ namespace DataETLViaHttp.BackgroundService
                 CronExpression expression = CronExpression.Parse(_cronExpression, _format);
                 DateTime? nextUtc = expression.GetNextOccurrence(DateTime.UtcNow);
 
-                _ = Task.Run(() =>
-                {
-                    _logger.LogInformation("\n\rNext at {nextUtc} \n\rNow at {now},\n\rThreadId:{threadId}",
+                _logger.LogInformation("\n\rNext at {nextUtc} \n\rNow at {now},\n\rThreadId:{threadId}",
                                 nextUtc.Value.AddHours(8).ToString("yyyy-MM-dd HH:mm:ss"),
                                 DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                                 Thread.CurrentThread.ManagedThreadId);
 
-
+                _ = Task.Run(() =>
+                {
                     while (!source.Token.IsCancellationRequested && nextUtc.HasValue)
                     {
                         if (IsPostBack)
                         {
-
-                            SetOnce();
+                            SetOnce().GetAwaiter().GetResult();
                             IsPostBack = false;
                         }
                         if (nextUtc.HasValue && DateTime.Now >= nextUtc.Value.AddHours(8))
@@ -77,13 +75,12 @@ namespace DataETLViaHttp.BackgroundService
                             task = Execute(source.Token);
 
                             nextUtc = expression.GetNextOccurrence(DateTime.UtcNow);
-                            Task.Delay(nextUtc.Value - DateTime.UtcNow);
+                            Thread.Sleep(nextUtc.Value - DateTime.UtcNow);
                         }
                         else
                         {
-                            Task.Delay(TimeSpan.FromSeconds(1));
+                            Thread.Sleep(TimeSpan.FromSeconds(1));
                         }
-
                     }
 
                 }, source.Token);
