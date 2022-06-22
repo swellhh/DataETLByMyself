@@ -47,51 +47,25 @@ namespace DataETLViaHttp.BackgroundService
             source.Cancel();
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
             source = source.IsCancellationRequested ? new CancellationTokenSource() : source;
 
             if (IsOpen)
             {
-                CronExpression expression = CronExpression.Parse(_cronExpression, _format);
-                DateTime? nextUtc = expression.GetNextOccurrence(DateTime.UtcNow);
+                using var timer = new CronTimer(_cronExpression, _format);
 
-                _logger.LogInformation("\n\rNext at {nextUtc} \n\rNow at {now},\n\rThreadId:{threadId}",
-                                nextUtc.Value.AddHours(8).ToString("yyyy-MM-dd HH:mm:ss"),
-                                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                                Thread.CurrentThread.ManagedThreadId);
-
-                _ = Task.Run(() =>
+                while (await timer.WaitForNextTickAsync(cancellationToken))
                 {
-                    while (!source.Token.IsCancellationRequested && nextUtc.HasValue)
+                    if (IsPostBack)
                     {
-                        if (IsPostBack)
-                        {
-                            SetOnce().GetAwaiter().GetResult();
-                            IsPostBack = false;
-                        }
-                        if (nextUtc.HasValue && DateTime.Now >= nextUtc.Value.AddHours(8))
-                        {
-                            task = Execute(source.Token);
-
-                            nextUtc = expression.GetNextOccurrence(DateTime.UtcNow);
-                            Thread.Sleep(nextUtc.Value - DateTime.UtcNow);
-                        }
-                        else
-                        {
-                            Thread.Sleep(TimeSpan.FromSeconds(1));
-                        }
+                        await SetOnce();
+                        IsPostBack = false;
                     }
 
-                }, source.Token);
+                    await Execute(source.Token);
+                }
             }
-
-            if (task != null && task.IsCompleted)
-            {
-                return task;
-            }
-
-            return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)

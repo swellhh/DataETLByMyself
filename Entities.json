@@ -10,70 +10,70 @@
     "name": "dwd_spt_zjsjqx24xsljmylybxx",
     "url": "/gateway/jxzhcs",
     "client": "Yjtyxm",
-    "isStop": false,
+    "isStop": true,
     "zw": "省平台-浙江省级区县24小时累计面雨量预报信息"
   },
   {
     "name": "dwd_spt_zjsjqxmylxsskxx",
     "url": "/gateway/dwd_jxzhcs_physics",
     "client": "Yjtyxm",
-    "isStop": false,
+    "isStop": true,
     "zw": "省平台-浙江省级区县面雨量小时实况信息"
   },
   {
     "name": "dwd_spt_1kmwgjsybxx",
     "url": "/gateway/1kmwgjsybxx",
     "client": "Yjtyxm",
-    "isStop": false,
+    "isStop": true,
     "zw": "省平台-1公里网格降水预报信息"
   },
   {
     "name": "dwd_spt_5kmwgybxx",
     "url": "/gateway/5kmwgybxx",
     "client": "Yjtyxm",
-    "isStop": false,
+    "isStop": true,
     "zw": "省平台-5公里网格预报信息"
   },
   {
     "name": "dwd_spt_qxzdxx",
     "url": "/gateway/qxzdxx",
     "client": "Yjtyxm",
-    "isStop": false,
+    "isStop": true,
     "zw": "省平台-地面自动气象站站点信"
   },
   {
     "name": "dwd_jxsslj_npgqjcsjxx",
     "url": "/gateway/dwd_jxsslj_npgqjcsjxx",
     "client": "Yjtyxm",
-    "isStop": false,
+    "isStop": true,
     "zw": "南排工情监测数据信息"
   },
   {
     "name": "dwd_jxsslj_npgcrljpslxx",
     "url": "/gateway/dwd_jxsslj_npgcrljpslxx",
     "client": "Yjtyxm",
-    "isStop": false,
+    "isStop": true,
     "zw": "南排工程日累计排水量信息"
   },
   {
     "name": "dwd_spt_qyzdqxzzdxx",
     "url": "/gateway/dwd_spt_qyzdqxzzdxx",
     "client": "Yjtyxm",
-    "isStop": false,
+    "isStop": true,
     "zw": "区域自动气象站站点信息"
   },
   {
     "name": "dwd_spt_dmzdqxzgcxx",
     "url": "/gateway/dmzdqxzgcxx",
     "client": "Yjtyxm",
-    "isStop": false,
+    "isStop": true,
     "zw": "省平台-地面自动气象站观测信息"
   },
   {
     "name": "dwd_spt_qyzdqxzgcxx",
     "url": "/gateway/qyzdqxzgcxx",
     "client": "Yjfxft",
-    "isStop": false,
+    "isStop": true,
     "zw": "区域自动气象站观测信息"
   }
 ]
