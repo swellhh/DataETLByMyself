@@ -38,7 +38,7 @@ namespace DataETLViaHttp
 
             var provider = BuildDi(services, configuration);
 
-            CreateTables(provider);
+            //CreateTables(provider);
         }
 
         private static IServiceProvider BuildDi(IServiceCollection services,IConfiguration config)
@@ -61,6 +61,7 @@ namespace DataETLViaHttp
             });
             services
                 .AddHostedService<DataETLService>()
+                .AddHostedService<ThreadLoopService>()
                 .AddSingleton<IDataLoopUtil,DataLoopUtil>()
                 .AddSingleton<DataETLRetryInterceptor>()
                 .AddSingleton<ICacheClient,MemoryCacheClient>()

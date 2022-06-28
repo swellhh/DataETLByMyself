@@ -28,6 +28,7 @@ namespace DataETLViaHttp.BackgroundService
         {
             while (true)
             {
+                _logger.LogWarning("出大问题{0}", Thread.CurrentThread.ManagedThreadId);
                 Thread.Sleep(TimeSpan.FromSeconds(1));
             }
         }

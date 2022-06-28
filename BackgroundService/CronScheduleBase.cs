@@ -47,25 +47,34 @@ namespace DataETLViaHttp.BackgroundService
             source.Cancel();
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        public Task StartAsync(CancellationToken cancellationToken)
         {
             source = source.IsCancellationRequested ? new CancellationTokenSource() : source;
 
-            if (IsOpen)
+            task = Task.Run(async () =>
             {
-                using var timer = new CronTimer(_cronExpression, _format);
-
-                while (await timer.WaitForNextTickAsync(cancellationToken))
+                if (IsOpen)
                 {
-                    if (IsPostBack)
+                    using var timer = new CronTimer(_cronExpression, _format);
+
+                    while (await timer.WaitForNextTickAsync(cancellationToken))
                     {
-                        await SetOnce();
-                        IsPostBack = false;
+                        if (IsPostBack)
+                        {
+                            await SetOnce();
+                            IsPostBack = false;
+                        }
+
+                        await Execute(source.Token);
                     }
 
-                    await Execute(source.Token);
                 }
-            }
+
+            }, source.Token);
+
+
+            return Task.CompletedTask;
+
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
