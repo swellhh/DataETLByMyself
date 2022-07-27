@@ -15,11 +15,10 @@ namespace DataETLViaHttp.Strategy
 {
     public class SptZjsjqx24xsljmylybxxStrategy : BaseStrategy, IStrategy
     {
-        private readonly ILogger<SptZjsjqx24xsljmylybxxStrategy> _logger;
+        public const string NAME = "dwd_spt_zjsjqx24xsljmylybxx";
 
         public SptZjsjqx24xsljmylybxxStrategy(ILoggerFactory loggerFac, IDbConnectionFactory dbFactory, IConfiguration appSettings, IDataLoopUtil loopUtil) : base(dbFactory, appSettings, loopUtil)
         {
-            _logger = loggerFac.CreateLogger<SptZjsjqx24xsljmylybxxStrategy>();
         }
 
         public virtual async Task Exeute(EntitiesUrl configEntity)

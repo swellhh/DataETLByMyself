@@ -56,14 +56,10 @@ namespace DataETLViaHttp.BackgroundService
                 if (IsOpen)
                 {
                     using var timer = new CronTimer(_cronExpression, _format);
+                    await SetOnce();
 
                     while (await timer.WaitForNextTickAsync(cancellationToken))
                     {
-                        if (IsPostBack)
-                        {
-                            await SetOnce();
-                            IsPostBack = false;
-                        }
 
                         await Execute(source.Token);
                     }

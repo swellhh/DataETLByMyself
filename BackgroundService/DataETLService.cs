@@ -35,27 +35,21 @@ namespace DataETLViaHttp.BackgroundService
 
         public override string _cronExpression => _appSettings.GetValue<string>("HostService:CronExpression");
 
-        public override CronFormat _format => CronFormat.IncludeSeconds;
+        public override CronFormat _format => CronFormat.Standard;
 
-        public override async Task Execute(CancellationToken cancellationToken)
+        public override Task Execute(CancellationToken cancellationToken)
         {
             _logger.LogInformation("开始抓取嘉兴大数据平台接口数据");
 
-            try
+            foreach (var item in _urls.Where(w => !w.isStop))
             {
-                foreach (var item in _urls.Where(w => !w.isStop))
-                {
-                    var stra = _serviceAccessor(item.name);
+                var stra = _serviceAccessor(item.name);
 
-                    await stra.Exeute(item);
-                }
+                Task.Run(() => stra.Exeute(item));
 
             }
-            catch (Exception ex)
-            {
-                //_logger.LogError(ex, "定时任务出问题了");
-            }
 
+            return Task.CompletedTask;
         }
 
 
@@ -86,8 +80,6 @@ namespace DataETLViaHttp.BackgroundService
             foreach (var item in _urls.Where(w => !w.isStop))
             {
                 _cacheClient.Set(item.name, 0L, DateTime.Now.AddHours(5));
-
-                var stra = _serviceAccessor(item.name);
 
                 await GetDataBehindSeveralDay(item);
             }

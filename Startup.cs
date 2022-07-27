@@ -1,7 +1,5 @@
 ﻿using Castle.Core;
-using Castle.DynamicProxy;
 using Castle.MicroKernel.Registration;
-using Castle.Windsor;
 using DataETLViaHttp.Aop;
 using DataETLViaHttp.BackgroundService;
 using DataETLViaHttp.Cache;
@@ -19,7 +17,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Text;
+using System.Reflection;
+using System.Linq;
+using System.Collections.Concurrent;
 
 namespace DataETLViaHttp
 {
@@ -27,7 +27,8 @@ namespace DataETLViaHttp
     {
         public delegate IStrategy StrategyServiceResolver(string key);
         public delegate ISpecificWebClientUtil SpecificClientResolver(string key);
-
+        private static ConcurrentDictionary<string, IStrategy> _dic = null;
+        private const string _strategySign = "NAME";
 
         public static void Init(IServiceCollection services, IConfiguration configuration)
         {
@@ -38,11 +39,13 @@ namespace DataETLViaHttp
 
             var provider = BuildDi(services, configuration);
 
-            //CreateTables(provider);
+            CreateTables(provider);
         }
 
         private static IServiceProvider BuildDi(IServiceCollection services,IConfiguration config)
         {
+            DependencyResolver.Register(new Aop.ComponentRegistration());
+
             var dbHost = config.GetValue<string>("Application:AimDatabaseHost");
             var dbPort = config.GetValue<string>("Application:AimDatabasePort");
             var dbUser = SecurityHelper.DecryptDES(config.GetValue<string>("Application:AimDatabaseUser"));
@@ -61,7 +64,6 @@ namespace DataETLViaHttp
             });
             services
                 .AddHostedService<DataETLService>()
-                .AddHostedService<ThreadLoopService>()
                 .AddSingleton<IDataLoopUtil,DataLoopUtil>()
                 .AddSingleton<DataETLRetryInterceptor>()
                 .AddSingleton<ICacheClient,MemoryCacheClient>()
@@ -89,54 +91,38 @@ namespace DataETLViaHttp
             db.CreateTableIfNotExists<dwd_jxsslj_npgqjcsjxx>();
             db.CreateTableIfNotExists<dwd_jxsslj_npgcrljpslxx>();
             db.CreateTableIfNotExists<dwd_spt_qyzdqxzzdxx>();
+            db.CreateTableIfNotExists<dwd_jxsqxj_observations>();
+            db.CreateTableIfNotExists<dwd_jxsslj_hdswxx>();
+            db.CreateTableIfNotExists<dwd_jxsslj_ddtzdxx>();
 
         }
-                
+
+        private static void GetChooseStrategyDic(IServiceProvider container)
+        {
+            _dic = new ConcurrentDictionary<string, IStrategy>();
+
+            var types = typeof(BaseStrategy).GetTypeInfo().Assembly.GetTypes().Where(x => typeof(IStrategy).IsAssignableFrom(x) && !x.IsInterface);
+
+            foreach (var type in types)
+            {
+                var field = type.GetField(_strategySign);
+
+                _dic.TryAdd(field.GetRawConstantValue() as string, container.GetService(type) as IStrategy);
+
+            }
+        }
+
+
         private static void RegisterChooseStrategy(IServiceCollection services)
         {
-            DependencyResolver.Register(new Aop.ComponentRegistration());
 
             services.AddSingleton<StrategyServiceResolver>(serviceProvider => key =>
             {
-
-                switch (key)
+                if (_dic == null)
                 {
-                    case "dwd_jxsqxj_station":
-                        var target = serviceProvider.GetService<JxsqxjStationStrategy>();
-                        return target;
-                    case "dwd_spt_zjsjqx24xsljmylybxx":
-                        return serviceProvider.GetService<SptZjsjqx24xsljmylybxxStrategy>();
-
-                    case "dwd_spt_zjsjqxmylxsskxx":
-                        return serviceProvider.GetService<SptZjsjqxmylxsskxxStrategy>();
-
-                    case "dwd_spt_1kmwgjsybxx":
-                        return serviceProvider.GetService<Spt1kmwgjsybxxStrategy>();
-
-                    case "dwd_spt_5kmwgybxx":
-                        return serviceProvider.GetService<Spt5kmwgybxxStrategy>();
-
-                    case "dwd_spt_qxzdxx":
-                        return serviceProvider.GetService<SptQxzdxxStrategy>();
-
-                    case "dwd_jxsslj_npgqjcsjxx":
-                        return serviceProvider.GetService<JxssljNpgqjcsjxxStrategy>();
-
-                    case "dwd_jxsslj_npgcrljpslxx":
-                        return serviceProvider.GetService<JxssljNpgcrljpslxxStrategy>();
-
-                    case "dwd_spt_qyzdqxzzdxx":
-                        return serviceProvider.GetService<SptQyzdqxzzdxxStrategy>();
-
-                    case "dwd_spt_dmzdqxzgcxx":
-                        return serviceProvider.GetService<DmzdqxzgcxxStrategy>();
-
-                    case "dwd_spt_qyzdqxzgcxx":
-                        return serviceProvider.GetService<SptQyzdqxzgcxxStrategy>();
-
-                    default:
-                        throw new KeyNotFoundException();
+                    GetChooseStrategyDic(serviceProvider);
                 }
+                return _dic.ContainsKey(key) ? _dic[key] : null;
             });
 
         }
@@ -167,6 +153,7 @@ namespace DataETLViaHttp
         }
 
 
+
         private static void RegisterInterfaceConfigInfo(IServiceCollection services, IConfiguration configuration)
         {
             var exceptStFilePath = configuration.GetValue<string>("Application:StationExcept");
@@ -181,7 +168,6 @@ namespace DataETLViaHttp
             services.AddSingleton(entitiesUrl);
 
         }
-
 
     }
 

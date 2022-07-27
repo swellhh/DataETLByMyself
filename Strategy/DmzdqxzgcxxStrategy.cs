@@ -14,24 +14,22 @@ namespace DataETLViaHttp.Strategy
 {
     public class DmzdqxzgcxxStrategy : BaseStrategy, IStrategy
     {
-        private readonly ILogger<DmzdqxzgcxxStrategy> _logger;
+        public const string NAME = "dwd_spt_dmzdqxzgcxx";
 
         public DmzdqxzgcxxStrategy(ILoggerFactory loggerFac, IDbConnectionFactory dbFactory, IConfiguration appSettings, IDataLoopUtil loopUtil) : base(dbFactory, appSettings, loopUtil)
         {
-            _logger = loggerFac.CreateLogger<DmzdqxzgcxxStrategy>();
         }
 
         public virtual async Task Exeute(EntitiesUrl configEntity)
         {
             using var db = _dbFactory.OpenDbConnection();
 
-            var max = db.Scalar<int>(db.From<dwd_spt_dmzdqxzgcxx>().Select(w => new { max = Sql.Max("observtimes") }));
+            var max = db.Scalar<string>(db.From<dwd_spt_dmzdqxzgcxx>().Select(w => new { max = Sql.Max("observtimes") }));
             var dwd_spt_dmzdqxzgcxxs = await _loopUtil.GetDataFromInters<dwd_spt_dmzdqxzgcxx>(configEntity,
                 new Dictionary<string, object> { { "observtimes", max } });
             dwd_spt_dmzdqxzgcxxs = dwd_spt_dmzdqxzgcxxs.GroupBy(w => new { w.stationnum, w.observtimes, w.etl_oper_type }).Select(w => w.FirstOrDefault()).ToList();
             var tableData = db.Select<dwd_spt_dmzdqxzgcxx>();
-            dwd_spt_dmzdqxzgcxxs.RemoveAll(w => tableData.FindAll(x => x.stationnum == w.stationnum && x.observtimes==w.observtimes && 
-                    x.etl_oper_type == w.etl_oper_type).Count > 0);
+            dwd_spt_dmzdqxzgcxxs.RemoveAll(w => tableData.FindAll(x => x.stationnum == w.stationnum && x.observtimes==w.observtimes).Count > 0);
             db.InsertAll(dwd_spt_dmzdqxzgcxxs);
 
         }
@@ -43,10 +41,9 @@ namespace DataETLViaHttp.Strategy
             if (db.Count<dwd_spt_dmzdqxzgcxx>() == 0)
             {
                 var dwd_spt_dmzdqxzgcxxs = await _loopUtil.GetDataFromInters<dwd_spt_dmzdqxzgcxx>(
-                    async list => { await db.InsertAllAsync(list); },
                     configEntity,
                     new Dictionary<string, object> {
-                            { "observtimes", date.ToString("yyyy-MM-dd HH:mm:ss") }
+                            { "observtimes", date.ToString("yyyyMMddHH") }
                     });
 
                 await db.InsertAllAsync(dwd_spt_dmzdqxzgcxxs);

@@ -17,6 +17,8 @@ namespace DataETLViaHttp.Strategy
 {
     public class JxssljNpgcrljpslxxStrategy : BaseStrategy,IStrategy
     {
+        public const string NAME = "dwd_jxsslj_npgcrljpslxx";
+
         private readonly ILogger<JxssljNpgcrljpslxxStrategy> _logger;
 
         public JxssljNpgcrljpslxxStrategy(ILoggerFactory loggerFac, IDbConnectionFactory dbFactory, IConfiguration appSettings, IDataLoopUtil loopUtil) : base(dbFactory, appSettings, loopUtil)

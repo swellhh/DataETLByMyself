@@ -15,6 +15,8 @@ namespace DataETLViaHttp.Strategy
 {
     public class Spt5kmwgybxxStrategy : BaseStrategy, IStrategy
     {
+        public const string NAME = "dwd_spt_5kmwgybxx";
+
         private readonly ILogger<Spt5kmwgybxxStrategy> _logger;
 
         public Spt5kmwgybxxStrategy(ILoggerFactory loggerFac, IDbConnectionFactory dbFactory, IConfiguration appSettings, IDataLoopUtil loopUtil) : base(dbFactory, appSettings, loopUtil)

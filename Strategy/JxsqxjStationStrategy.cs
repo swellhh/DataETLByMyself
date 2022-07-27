@@ -15,6 +15,8 @@ namespace DataETLViaHttp.Strategy
 {
     public class JxsqxjStationStrategy : BaseStrategy, IStrategy
     {
+        public const string NAME = "dwd_jxsqxj_station";
+
         private readonly ILogger<JxsqxjStationStrategy> _logger;
 
         public JxsqxjStationStrategy(ILoggerFactory loggerFac, IDbConnectionFactory dbFactory, IConfiguration appSettings, IDataLoopUtil loopUtil) : base(dbFactory, appSettings, loopUtil)
@@ -28,6 +30,7 @@ namespace DataETLViaHttp.Strategy
 
         public virtual async Task Exeute(EntitiesUrl configEntity)
         {
+            await Task.Delay(TimeSpan.FromSeconds(5));
             using var db = _dbFactory.OpenDbConnection();
 
             var max = db.Scalar<int>(db.From<dwd_jxsqxj_station>().Select(w => new { max = Sql.Max("id") }));

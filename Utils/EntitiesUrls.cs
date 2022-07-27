@@ -22,5 +22,8 @@ namespace DataETLViaHttp.Utils
 
         public string zw { get; set; }
 
+        public DateTime? syncDate { get; set; }
+
+
     }
 }
